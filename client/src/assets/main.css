@@ -46,7 +46,10 @@ button {
 button:active {
   box-shadow: inset 2px 2px 0 #ffffff, inset -2px -2px 0 #404040;
 }
-input[type="text"], input[type="password"], select {
+input[type="text"],
+input[type="password"],
+input[type="email"],
+select {
   background-color: #ffffff;
   border: 2px inset #808080;
   padding: 2px;
