@@ -7,34 +7,34 @@
         <label>First name</label>
         <input
           type="text"
-          v-model="formData.firstName"
+          v-model="user.firstName"
           required
         >
         <div></div>
         <label>Last name</label>
         <input
           type="text"
-          v-model="formData.lastName"
+          v-model="user.lastName"
           required
         >
 
         <label>Prefix</label>
         <input
           type="text"
-          v-model="formData.prefix"
+          v-model="user.prefix"
         >
 
         <label>E-mail</label>
         <input
-          type="text"
-          v-model="formData.email"
+          type="email"
+          v-model="user.email"
           required
         >
 
         <label>Password</label>
         <input
           type="password"
-          v-model="formData.password"
+          v-model="user.password"
           required
         >
         
@@ -50,27 +50,31 @@
 </template>
 
 <script>
-import useSignUp from '@/composables/useSignUp'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '../../store/modules/authStore'
+import { storeToRefs } from 'pinia'
 
 export default {
   setup() {
     
-    const { formData, error, isPending, signUp } = useSignUp()
-
+    const authStore = useAuthStore()
     const router = useRouter()
 
-    const handleSubmit = () => {
-      signUp()
-      router.push({ name: 'SignUpSuccessView' })
+    const { user, error, isPending } = storeToRefs(authStore)
+
+    const handleSubmit = async () => {
+      const res = await authStore.signUp()
+      if (!authStore.error && res) {
+        router.push({ name: 'SignUpSuccessView' })
+      } else {
+        console.log(`Something went wrong: ${authStore.error}`)
+      }
     }
 
     return {
-      formData,
+      user,
       error,
       isPending,
-      signUp,
-      router,
       handleSubmit
     }
   }
