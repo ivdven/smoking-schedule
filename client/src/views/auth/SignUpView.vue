@@ -64,10 +64,10 @@ export default {
 
     const handleSubmit = async () => {
       const res = await authStore.signUp()
-      if (!authStore.error && res) {
+      if (!error.value && res) {
         router.push({ name: 'SignUpSuccessView' })
       } else {
-        console.log(`Something went wrong: ${authStore.error}`)
+        console.log(`Something went wrong: ${error.value}`)
       }
     }
 
