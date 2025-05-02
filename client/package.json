@@ -19,6 +19,7 @@
     "vuex": "^4.0.0"
   },
   "devDependencies": {
+    "@babel/eslint-parser": "^7.27.0",
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-e2e-cypress": "~5.0.0",
     "@vue/cli-plugin-pwa": "~5.0.0",
@@ -30,6 +31,9 @@
     "@vue/vue3-jest": "^27.0.0-alpha.1",
     "babel-jest": "^27.0.6",
     "cypress": "^9.7.0",
-    "jest": "^27.0.5"
+    "eslint": "^9.25.1",
+    "eslint-plugin-vue": "^10.0.0",
+    "jest": "^27.0.5",
+    "vue-eslint-parser": "^10.1.3"
   }
 }
