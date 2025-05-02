@@ -49,13 +49,13 @@ export const useAuthStore = defineStore('auth', {
 
     logout() {
       this.token = null
-      this.user = null
+      this.user = {}
       this.isAuthenticated = false
 
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       localStorage.removeItem('isAuthenticated')
-
+      this.resetState()
       console.log('User logged out')
     },
 
@@ -104,11 +104,9 @@ export const useAuthStore = defineStore('auth', {
     handleError(err) {
       this.isPending = false
       console.error("Fetch user profile error:", err)
-      if (err.response && err.response.data && err.response.data.message) {
-        this.error = err.response.data.message
-      } else {
-        this.error = 'An unexpected error occurred. Please try again.'
-      }
+      return err.response?.data?.message ? 
+      this.error = err.response.data.message :
+      this.error = 'An unexpected error occurred. Please try again.'
     }
   }
 })
