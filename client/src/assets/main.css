@@ -5,7 +5,8 @@ body {
   margin: 0;
   padding: 0;
 }
-.window {
+.window,
+.nav-window {
   background-color: #c0c0c0;
   border: 2px solid #808080;
   box-shadow: inset -2px -2px 0 #ffffff, inset 2px 2px 0 #404040;
@@ -15,7 +16,8 @@ body {
   flex-direction: column;
   gap: 10px;
 }
-.window-title {
+.window-title,
+.nav-window-title {
   background: linear-gradient(to right, #000080, #0000a0);
   color: #ffffff;
   padding: 3px 5px;
