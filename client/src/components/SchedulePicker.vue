@@ -1,62 +1,69 @@
 <template>
-
-  <div v-if="scheduleStore.step === 'selectDay'" class="work-days-container">
-    <div class="work-days-window">
-    <div class="work-days-title">Choose a day this week #{{ getWeekNumber }}</div>
-    <div class="date-picker">
-      <div class="work-week" v-for="day in workDays" :key="day">
-        <button class="work-day" @click="handleSelectDay(day)">{{ day }}</button>
-      </div>
+  <div class="card-container">
+    <div v-if="scheduleStore.step === 'selectDay'">
+      <WorkWeek
+        :context="'SmokingSchedule'"
+        :workDays="workDays"
+        :getWeekNumber="getWeekNumber"
+        :hasSchedule="scheduleStore.hasSchedule"
+        />
     </div>
-    </div>
-  </div>
 
-  <div v-if="scheduleStore.step === 'morning'">
-    <TimeSlots
-      :slots="morningSlots"
-      :title="`Pick a morning slot`"
-      :takenSlots="takenMorningSlots"
-      @go-back="handleGoBack"
-      @submit-slot="handleMorningSlotSubmit"
+    <div v-if="scheduleStore.step === 'morning'">
+      <TimeSlots
+        :slots="morningSlots"
+        :title="`Pick a morning slot`"
+        :takenSlots="takenMorningSlots"
+        @go-back="handleGoBack"
+        @submit-slot="handleMorningSlotSubmit"
+        />
+    </div>
+
+    <div v-if="scheduleStore.step === 'afternoon'">
+      <TimeSlots
+        :slots="afternoonSlots"
+        :title="`Pick a afternoon slot`"
+        :takenSlots="takenAfternoonSlots"
+        @go-back="handleGoBack"
+        @submit-slot="handleAfternoonSlotSubmit"
+        />
+    </div>
+
+    <div v-if="scheduleStore.step === 'submit-form' && !scheduleStore.hasSchedule">
+      <DetailCard 
+        :mode="'submit'"
+        :context="'ScheduleView'"
+        :title="`Submit your time slots`"
+        :day="scheduleStore.selectedDay.day"
+        :morningSlot="scheduleStore.selectedDay.selectedSlots.morning"
+        :afternoonSlot="scheduleStore.selectedDay.selectedSlots.afternoon"
+        :hasSchedule="scheduleStore.hasSchedule"
+        :error="error"
+        @go-back="handleGoBack"
+        @submit-slot="handleFormSubmit"
       />
-  </div>
-
-  <div v-if="scheduleStore.step === 'afternoon'">
-    <TimeSlots
-      :slots="afternoonSlots"
-      :title="`Pick a afternoon slot`"
-      :takenSlots="takenAfternoonSlots"
-      @go-back="handleGoBack"
-      @submit-slot="handleAfternoonSlotSubmit"
+    </div>
+    <div v-if="scheduleStore.step === 'submit-form' && scheduleStore.hasSchedule">
+      <DetailCard 
+        :mode="'view'"
+        :context="'ScheduleView'"
+        :title="`Your selected time slots`"
+        :day="scheduleStore.selectedDay.day"
+        :morningSlot="scheduleStore.selectedDay.selectedSlots.morning"
+        :afternoonSlot="scheduleStore.selectedDay.selectedSlots.afternoon"
+        :hasSchedule="scheduleStore.hasSchedule"
+        :error="error"
+        @go-back="handleGoBack"
+        @submit-slot="handleFormSubmit"
       />
-  </div>
-
-  <div v-if="scheduleStore.step === 'submit-form'">
-    <div class="window">
-      <div class="window-title">Submit your smoking breaks</div>
-      <form class="form-container" @submit.prevent="handleSubmit">
-        <fieldset>
-          <legend>{{ scheduleStore.selectedDay.day }}</legend>
-          <label>Morning slot</label>
-          <div>{{ scheduleStore.selectedDay.selectedSlots.morning }}</div>
-          <label>Afternoon slot</label>
-          <div>{{ scheduleStore.selectedDay.selectedSlots.afternoon }}</div>
-        </fieldset>
-        <div v-if="!scheduleStore.hasSchedule" class="form-actions">
-          <button @click="handleGoBack">Go back</button>
-          <button>Submit</button>
-        </div>
-        <div v-else>
-          <button @click="handleGoToHome">Go back</button>
-        </div>
-        <div class="error-message" v-if="error">{{ error }}</div>
-      </form>
     </div>
   </div>
-
+  
 </template>
 
 <script>
+import DetailCard from './DetailCard.vue'
+import WorkWeek from '@/components/WorkWeek.vue'
 import TimeSlots from '@/components/TimeSlots.vue'
 
 import { useScheduleStore } from '@/store/modules/scheduleStore'
@@ -64,9 +71,12 @@ import { useAuthStore } from '@/store/modules/authStore'
 import useTimeSlots from '@/composables/useTimeSlots'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
+import { onMounted, ref } from 'vue'
 
 export default {
   components: {
+    DetailCard,
+    WorkWeek,
     TimeSlots
   },
   setup() {
@@ -76,9 +86,10 @@ export default {
     const { error, isPending, takenMorningSlots, takenAfternoonSlots } = storeToRefs(scheduleStore)
 
     const router = useRouter()
+    const userId = ref(authStore.user.id)
 
     const handleSelectDay = (day) => {
-      scheduleStore.selectDay(day)
+      scheduleStore.selectDay(day, userId.value)
       handleTakenSlots(day)
     }
 
@@ -95,7 +106,7 @@ export default {
       scheduleStore.step = 'submit-form'
     }
 
-    const handleSubmit = async () => {
+    const handleFormSubmit = async () => {
       const res = await scheduleStore.handleSlotsSubmit() 
       if (!error.value && res) {
         router.push({ name: 'HomeView' })
@@ -105,8 +116,7 @@ export default {
     }
 
     const handleGoBack = () => {
-      if (scheduleStore.step === 'morning') {
-        scheduleStore.step = 'selectDay'
+      if (scheduleStore.step === 'morning' || scheduleStore.step === 'submit-form' && scheduleStore.hasSchedule) {
         scheduleStore.resetState()
       }
       if (scheduleStore.step === 'afternoon') {
@@ -117,24 +127,23 @@ export default {
       }
     }
 
-    const handleGoToHome = () => {
-      router.push({ name: 'HomeView' })
+    onMounted(() => {
       scheduleStore.resetState()
-    }
+    })
 
 
     return {
       authStore,
       scheduleStore,
+      userId,
       workDays,
       getWeekNumber,
       handleSelectDay,
       handleGoBack,
       handleMorningSlotSubmit,
       handleAfternoonSlotSubmit,
-      handleSubmit,
+      handleFormSubmit,
       handleTakenSlots,
-      handleGoToHome,
       morningSlots,
       afternoonSlots,
       error,
@@ -146,39 +155,12 @@ export default {
 }
 </script>
 
-<style scoped>
-.work-days-container {
-  height: 100%;
-  margin: 0;
+<style>
+.card-container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
 }
-.work-days-window {
-  flex-flow: row wrap;
-  width: 500px;
-  height: 250px;
-  justify-content: space-around;
-  align-items: center;
-  gap: 7px;
-  padding: 10px;
-}
-.work-days-title {
-  align-self: center;
-  text-align: center;
-  flex-basis: 486px;
-}
-.date-picker {
-  display: flex;
-  align-items: center;
-  width: 500px;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
-.work-days-window {
-  height: 120px;
-}
-.work-days-title {
-  margin-bottom: auto;
-}
+
 </style>
