@@ -1,16 +1,15 @@
 <template>
-  <div v-if="user">
-    <p>Hi, {{ user.firstName }}</p>
-  </div>
-  <button @click="handleLogOut">log out</button>
+  <DashBoard :userId="user.id" />
 </template>
 
 <script>
+import DashBoard from '@/components/DashBoard.vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../store/modules/authStore'
 import { computed } from 'vue'
 
 export default {
+  components: { DashBoard },
   setup() {
 
     const router = useRouter()
@@ -25,7 +24,8 @@ export default {
     
     return {
       user,
-      handleLogOut
+      handleLogOut,
+      authStore
     }
   }
 }
