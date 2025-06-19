@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { useAuthStore } from './authStore'
 import axios from 'axios'
+import { isAfter, parse, isEqual, startOfDay } from 'date-fns'
 
 const api = axios.create({
   baseURL: 'http://localhost:3000/api/schedules',
@@ -30,24 +31,10 @@ export const useScheduleStore = defineStore('schedules', {
   }),
 
   actions: {
-    async selectDay(day) {
-      const authStore = useAuthStore()
-      await this.fetchAllSchedules()
-      const userId = authStore.user.id
-      this.hasSchedule = this.checkUserHasScheduleForDay(day, userId)
-
-      if (this.hasSchedule) {
-        const userSchedule = this.takenSlots.find(
-          date => date.dayOfBreak.day === day && date.user._id === userId
-        )
-
-        this.selectedDay.selectedSlots.morning = userSchedule.dayOfBreak.morningBreak
-        this.selectedDay.selectedSlots.afternoon = userSchedule.dayOfBreak.afternoonBreak
-        this.step = 'submit-form';
-      } else {
-        this.step = 'morning'
-      }
+    async selectDay(day, userId) {
+      await this.fetchTodayBreaks(day, userId)
     },
+    
     selectSlot(slot) {
       if (this.selectedDay.day != null && this.step === 'morning') {
         this.selectedDay.selectedSlots.morning = slot
@@ -64,11 +51,78 @@ export const useScheduleStore = defineStore('schedules', {
         }
       }
       this.step = 'selectDay'
+      this.hasSchedule = false
+      this.error = null
     },
 
-    checkUserHasScheduleForDay(day, userId) {
-      return this.takenSlots.some(date => date.dayOfBreak.day === day && date.user._id === userId);
+    async checkUserHasScheduleForDay(day, userId) {
+      try {
+        await this.fetchAllSchedules()
+        this.hasSchedule = this.takenSlots.some(date => date.dayOfBreak.day === day && date.user._id === userId)
+      } catch (err) {
+        this.handleError(err)
+      }
     },
+
+    async fetchTodayBreaks(day, userId) {
+      try {
+        await this.checkUserHasScheduleForDay(day, userId)
+        if (this.hasSchedule) {
+          const userSchedule = this.takenSlots.find(date => date.dayOfBreak.day === day && date.user._id === userId)
+          this.selectedDay.day = userSchedule.dayOfBreak.day
+          this.selectedDay.selectedSlots.morning = userSchedule.dayOfBreak.morningBreak
+          this.selectedDay.selectedSlots.afternoon = userSchedule.dayOfBreak.afternoonBreak
+          this.step = 'submit-form'
+        } else {
+          this.selectedDay.selectedSlots.morning = 'No slot selected'
+          this.selectedDay.selectedSlots.afternoon = 'No slot selected'
+          this.step = 'morning'
+        }
+      } catch (err) {
+        this.handleError(err)
+      }
+    },
+
+    async fetchUserWeeklySelectedBreaks(userId) {
+      try {
+        await this.fetchAllSchedules()
+
+        const today = this.today
+        const currentYear = today.getFullYear()
+        const todayStart = startOfDay(today)
+
+        const parseDayString = (str) => {
+          if (typeof str !== 'string') return null
+          const fullStr = `${str}/${currentYear}`
+          return parse(fullStr, 'EEE dd/LLL/yyyy', new Date())
+        }
+
+        console.log('All slots:', this.takenSlots)
+
+        const upcomingBreaks = this.takenSlots
+          .filter(slot => {
+            const isUserMatch = slot.user._id === userId
+            const dayStr = slot.dayOfBreak?.day
+
+            if (!isUserMatch || typeof dayStr !== 'string') return false
+
+            const slotDate = parseDayString(dayStr)
+            if (!slotDate) return false
+
+            return isAfter(slotDate, todayStart) || isEqual(slotDate, todayStart)
+          })
+          .map(slot => slot.dayOfBreak.day)
+
+        this.selectedDays = [...new Set(upcomingBreaks)]
+
+        console.log('Filtered days:', upcomingBreaks)
+
+      } catch (err) {
+        this.handleError(err)
+        this.selectedDays = []
+      }
+    },
+
 
     async handleSlotsSubmit() {
       const { day, selectedSlots } = this.selectedDay
@@ -99,7 +153,7 @@ export const useScheduleStore = defineStore('schedules', {
         return res
          
       } catch (err) {
-        this.handleSubmitError(err)
+        this.handleError(err)
         throw err
       }
     },
@@ -124,6 +178,26 @@ export const useScheduleStore = defineStore('schedules', {
       }
     },
 
+    async fetchUserSelectedSchedule (userId, day) {
+      try {
+        const res = await api.get('/getSchedule', {
+          params: { userId, day }
+        })
+        const dayOfBreak = res.data?.dayOfBreak || {}
+
+        this.selectedDay.day = dayOfBreak.day || null
+        this.selectedDay.selectedSlots.morning = dayOfBreak.morningBreak || null
+        this.selectedDay.selectedSlots.afternoon = dayOfBreak.afternoonBreak || null
+
+        console.log('selectedDay:', this.selectedDay)
+
+        return this.selectedDay
+        
+      } catch (err) {
+        this.handleError(err)
+      }
+    },
+
     async fetchAllSchedules () {
       try {
         const res = await api.get('/getSchedules')
@@ -132,14 +206,14 @@ export const useScheduleStore = defineStore('schedules', {
         console.log('takenSlots: ', this.takenSlots)
         return res.data
       } catch (err) {
-        this.error = err
+        this.handleError(err)
         console.log('Problem with fetching schedules ', this.error)
       }
     },
     
-    handleSubmitError(err) {
+    handleError(err) {
       this.isPending = false
-      console.error('Error when submitting slots:', err)
+      console.error('Error: ', err)
     
       if (err.response?.data?.message) {
         this.error = err.response.data.message
