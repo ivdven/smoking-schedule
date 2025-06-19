@@ -84,7 +84,7 @@ export default {
 .time-slots-window {
   flex-flow: row wrap;
   width: 500px;
-  height: 250px;
+  min-height: 250px;
   justify-content: space-around;
   align-items: center;
   gap: 7px;
