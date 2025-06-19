@@ -22,7 +22,7 @@ function isTokenExpired(token) {
 
 const routes = [
   {
-    path: '/',
+    path: '/dashboard',
     name: 'HomeView',
     component: HomeView,
     meta: { requiresAuth: true }
@@ -33,14 +33,14 @@ const routes = [
     component: () => import('../views/AboutView.vue')
   },
   {
-    path: '/smoking-schedule',
+    path: '/schedule-view',
     name: 'ScheduleView',
     component: () => import('@/views/schedule/ScheduleView.vue'),
     meta: { requiresAuth: true },
   },
   {
-    path: '/smoking-schedule/:id',
-    name: 'DetailView',
+    path: '/schedule-detail',
+    name: 'DetailScheduleView',
     component: () => import('@/views/schedule/DetailScheduleView.vue'),
     meta: { requiresAuth: true },
     props: true
