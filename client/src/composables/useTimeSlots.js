@@ -2,8 +2,6 @@ import { useScheduleStore } from "@/store/modules/scheduleStore"
 import { startOfWeek, addDays, format, getWeek } from "date-fns"
 import { computed } from "vue"
 
-const scheduleStore = useScheduleStore()
-
 const generateTimeSlots = (startHour, endHour) => {
   const slots = []
   for (let hour = startHour; hour < endHour; hour++) {
@@ -16,28 +14,35 @@ const generateTimeSlots = (startHour, endHour) => {
   return slots
 }
 
-const morningSlots = computed(() => generateTimeSlots(8, 12))
-const afternoonSlots = computed(() => generateTimeSlots(12, 18))
+export default function useTimeSlots() {
+  const scheduleStore = useScheduleStore()
 
-const workDays = computed(() => {
-  const today = scheduleStore.today
-  const start = startOfWeek(today, { weekStartsOn: 1 })
+  const morningSlots = computed(() => generateTimeSlots(8, 12))
+  const afternoonSlots = computed(() => generateTimeSlots(12, 18))
 
-  return Array.from({ length: 5 }, (_, i) =>
-    format(addDays(start, i), 'EEE dd/LLL')
+  const formatToday = (day) => {
+    return format(day, 'EEE dd/LLL')
+  }
+
+  const workDays = computed(() => {
+    const today = scheduleStore.today
+    const start = startOfWeek(today, { weekStartsOn: 1 })
+
+    return Array.from({ length: 5 }, (_, i) =>
+      format(addDays(start, i), 'EEE dd/LLL')
+    )
+  })
+
+  const getWeekNumber = computed(() =>
+    getWeek(scheduleStore.today, { weekStartsOn: 1 })
   )
-})
 
-const getWeekNumber = computed(() => getWeek(scheduleStore.today, { weekStartsOn: 1 }))
-
-const useTimeSlots = () => {
   return {
     generateTimeSlots,
     morningSlots,
     afternoonSlots,
     workDays,
     getWeekNumber,
+    formatToday
   }
 }
-
-export default useTimeSlots
