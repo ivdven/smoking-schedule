@@ -67,21 +67,33 @@ export const useScheduleStore = defineStore('schedules', {
     async fetchTodayBreaks(day, userId) {
       try {
         await this.checkUserHasScheduleForDay(day, userId)
+    
         if (this.hasSchedule) {
-          const userSchedule = this.takenSlots.find(date => date.dayOfBreak.day === day && date.user._id === userId)
-          this.selectedDay.day = userSchedule.dayOfBreak.day
-          this.selectedDay.selectedSlots.morning = userSchedule.dayOfBreak.morningBreak
-          this.selectedDay.selectedSlots.afternoon = userSchedule.dayOfBreak.afternoonBreak
-          this.step = 'submit-form'
+          const userSchedule = this.takenSlots.find(
+            date => date.dayOfBreak.day === day && date.user._id === userId
+          )
+    
+          if (userSchedule) {
+            this.selectedDay.day = userSchedule.dayOfBreak.day
+            this.selectedDay.selectedSlots.morning = userSchedule.dayOfBreak.morningBreak
+            this.selectedDay.selectedSlots.afternoon = userSchedule.dayOfBreak.afternoonBreak
+            this.step = 'submit-form'
+          }
         } else {
           this.selectedDay.selectedSlots.morning = 'No slot selected'
           this.selectedDay.selectedSlots.afternoon = 'No slot selected'
           this.step = 'morning'
         }
+    
+        console.log('Returning hasSchedule:', this.hasSchedule)
+        return this.hasSchedule
       } catch (err) {
+        console.error('Error in fetchTodayBreaks:', err)
         this.handleError(err)
+        return false
       }
-    },
+    }
+    ,
 
     async fetchUserWeeklySelectedBreaks(userId) {
       try {
