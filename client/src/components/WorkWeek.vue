@@ -65,6 +65,10 @@ export default {
       }
     }
 
+    const handleNavigate = () => {
+      router.push({ name: 'ScheduleView' })
+    }
+
     const handleGoToDay = async (day) => {
       scheduleStore.selectedDay.day = day
       await scheduleStore.fetchTodayBreaks(scheduleStore.selectedDay.day, userId.value)
@@ -83,7 +87,8 @@ export default {
      userId,
      handleSelectDay,
      handleTakenSlots,
-     handleGoToDay
+     handleGoToDay,
+     handleNavigate
     }
   }
 }
