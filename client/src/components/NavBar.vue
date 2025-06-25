@@ -2,6 +2,11 @@
   <div class="nav-bar">
     <h1>Hi, welcome {{ user.firstName || 'Guest' }}</h1>
     <nav>
+      <div v-if="user.email" class="nav-window">
+        <div class="nav-window-title">
+          <router-link class="nav-link" :to="{ name: 'HomeView' }">Home</router-link>
+        </div>
+      </div>
       <div class="nav-window">
         <div class="nav-window-title">
           <router-link class="nav-link" :to="{ name: 'AboutView' }">About</router-link>
